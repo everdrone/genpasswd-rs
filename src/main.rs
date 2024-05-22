@@ -1,6 +1,16 @@
+use std::collections::HashSet;
+
 use anstyle::{AnsiColor, Effects};
 use clap::{arg, builder::styling::Styles, error::ErrorKind, value_parser, Command};
 use rand::Rng;
+
+struct PasswordOptions {
+    pub sequences: usize,
+    pub length: usize,
+    pub digits: usize,
+    pub uppercase: usize,
+    pub separator: String,
+}
 
 fn main() {
     let styles = {
@@ -50,13 +60,21 @@ fn main() {
 
     let matches = cmd.get_matches_mut();
 
-    let count = *matches.get_one::<usize>("sequences").unwrap();
+    let sequences = *matches.get_one::<usize>("sequences").unwrap();
     let length = *matches.get_one::<usize>("length").unwrap();
     let digits = *matches.get_one::<usize>("digits").unwrap();
     let uppercase = *matches.get_one::<usize>("uppercase").unwrap();
-    let separator = matches.get_one::<String>("separator").unwrap();
+    let separator = matches.get_one::<String>("separator").unwrap().clone();
 
-    match validate_parameters(count, length, digits, uppercase) {
+    let opts = PasswordOptions {
+        sequences,
+        length,
+        digits,
+        uppercase,
+        separator,
+    };
+
+    match validate_parameters(&opts) {
         Ok(_) => {}
         Err(msg) => {
             let err = cmd.error(ErrorKind::ValueValidation, msg);
@@ -64,38 +82,33 @@ fn main() {
         }
     }
 
-    let password = generate_password(count, length, digits, uppercase, separator);
+    let password = generate_password(&opts);
     println!("{}", password);
 }
 
-pub fn validate_parameters(
-    count: usize,
-    length: usize,
-    digits: usize,
-    uppercase: usize,
-) -> Result<(), String> {
-    let total_chars = count * length;
-    if digits + uppercase > total_chars {
+fn validate_parameters(opts: &PasswordOptions) -> Result<(), String> {
+    let total_chars = opts.sequences * opts.length;
+
+    if opts.digits + opts.uppercase > total_chars {
         return Err(String::from(
             "The number of uppercase letters and digits exceeds the total number of characters.",
         ));
     }
+
     Ok(())
 }
 
-pub fn generate_password(
-    count: usize,
-    length: usize,
-    digits: usize,
-    uppercase: usize,
-    separator: &str,
-) -> String {
+fn generate_password(opts: &PasswordOptions) -> String {
     let mut rng = rand::thread_rng();
-    let total_length = count * length;
+    let total_length = opts.sequences * opts.length;
 
     // Generate positions for digits and uppercase letters
-    let digit_positions = generate_unique_positions(digits, total_length, &mut rng);
-    let uppercase_positions = generate_unique_positions(uppercase, total_length, &mut rng);
+    let mut positions = HashSet::new();
+
+    let digit_positions =
+        generate_unique_positions(opts.digits, total_length, &mut rng, &mut positions);
+    let uppercase_positions =
+        generate_unique_positions(opts.uppercase, total_length, &mut rng, &mut positions);
 
     // Generate password sequences
     let mut password_chars: Vec<char> = Vec::with_capacity(total_length);
@@ -112,19 +125,28 @@ pub fn generate_password(
 
     // Split password into sequences and join with separator
     password_chars
-        .chunks(length)
+        .chunks(opts.length)
         .map(|chunk| chunk.iter().collect::<String>())
         .collect::<Vec<String>>()
-        .join(separator)
+        .join(&opts.separator)
 }
 
-fn generate_unique_positions(count: usize, max: usize, rng: &mut impl Rng) -> Vec<usize> {
-    let mut positions = Vec::with_capacity(count);
+fn generate_unique_positions(
+    count: usize,
+    max: usize,
+    rng: &mut impl Rng,
+    used_positions: &mut HashSet<usize>,
+) -> HashSet<usize> {
+    let mut positions = HashSet::with_capacity(count);
+
     while positions.len() < count {
         let pos = rng.gen_range(0..max);
-        if !positions.contains(&pos) {
-            positions.push(pos);
+
+        if !used_positions.contains(&pos) {
+            positions.insert(pos);
+            used_positions.insert(pos);
         }
     }
+
     positions
 }
