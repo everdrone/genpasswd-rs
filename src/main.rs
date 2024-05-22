@@ -1,6 +1,6 @@
 use std::collections::HashSet;
 
-use anstyle::{AnsiColor, Effects};
+use anstyle::{AnsiColor, Effects, Style};
 use clap::{arg, builder::styling::Styles, error::ErrorKind, value_parser, Command};
 use rand::Rng;
 
@@ -12,16 +12,22 @@ struct PasswordOptions {
     pub separator: String,
 }
 
+const GREEN_BOLD: Style = AnsiColor::Green.on_default().effects(Effects::BOLD);
+const CYAN_BOLD: Style = AnsiColor::Cyan.on_default().effects(Effects::BOLD);
+const CYAN: Style = AnsiColor::Cyan.on_default();
+const YELLOW_BOLD: Style = AnsiColor::Yellow.on_default().effects(Effects::BOLD);
+const RED_BOLD: Style = AnsiColor::Red.on_default().effects(Effects::BOLD);
+
 fn main() {
     let styles = {
         Styles::styled()
-            .header(AnsiColor::Green.on_default().effects(Effects::BOLD))
-            .usage(AnsiColor::Green.on_default().effects(Effects::BOLD))
-            .literal(AnsiColor::Cyan.on_default().effects(Effects::BOLD))
-            .placeholder(AnsiColor::Cyan.on_default())
-            .error(AnsiColor::Red.on_default().effects(Effects::BOLD))
-            .valid(AnsiColor::Yellow.on_default().effects(Effects::BOLD))
-            .invalid(AnsiColor::Yellow.on_default().effects(Effects::BOLD))
+            .header(GREEN_BOLD)
+            .usage(GREEN_BOLD)
+            .literal(CYAN_BOLD)
+            .placeholder(CYAN)
+            .error(RED_BOLD)
+            .valid(YELLOW_BOLD)
+            .invalid(YELLOW_BOLD)
     };
 
     let mut cmd = Command::new("genpasswd")
