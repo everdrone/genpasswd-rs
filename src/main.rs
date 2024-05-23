@@ -33,6 +33,8 @@ fn main() {
     let mut cmd = Command::new("genpasswd")
         .styles(styles)
         .bin_name("genpasswd")
+        .version(clap::crate_version!())
+        .about("Generate a strong password")
         .arg(
             arg!(-n --sequences <NUM> "The number of alphanumeric sequences")
                 .required(false)
